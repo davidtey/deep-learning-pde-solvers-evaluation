@@ -65,7 +65,7 @@ def compare_performance(
             branch_runtime.append(branch_total_runtime[-1] - branch_fdb_runtime[-1])
             # note that branch output batch_size x 1 instead of batch_size like other algo
             tmp = (
-                model(torch.tensor(grid_with_t.T, device=device), patch=model.patches - 1)[:, 0].detach().cpu().numpy()
+                model(torch.tensor(grid_with_t.T, device=kwargs['device']), patch=model.patches - 1)[:, 0].detach().cpu().numpy()
             )
             branch += tmp
             branch_l1_error.append((np.abs(tmp - true)).mean())
@@ -92,7 +92,7 @@ def compare_performance(
             model.train_and_eval(debug_mode)
             dgm_runtime.append(time.time() - start)
             tmp = (
-                model(torch.tensor(grid_with_t.T, device=device)).detach().cpu().numpy()
+                model(torch.tensor(grid_with_t.T, device=kwargs['device'])).detach().cpu().numpy()
             )
             dgm += tmp
             dgm_l1_error.append((np.abs(tmp - true)).mean())
@@ -116,7 +116,7 @@ def compare_performance(
             model.train_and_eval(debug_mode)
             bsde_runtime.append(time.time() - start)
             tmp = (
-                model(torch.tensor(grid_nd.T, device=device))
+                model(torch.tensor(grid_nd.T, device=kwargs['device']))
                 .squeeze(-1)
                 .detach()
                 .cpu()

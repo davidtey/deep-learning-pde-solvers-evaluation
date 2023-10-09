@@ -31,7 +31,7 @@ class BSDENet(torch.nn.Module):
         batch_normalization=True,
         bsde_nb_states=1000,
         epochs=3000,
-        overtrain_rate=0.1,
+        bsde_overtrain_rate=0.1,
         device="cpu",
         bsde_activation="tanh",
         verbose=False,
@@ -147,8 +147,8 @@ class BSDENet(torch.nn.Module):
         self.weight_decay = weight_decay
 
         x_lo, x_hi = (
-            x_lo - overtrain_rate * (x_hi - x_lo),
-            x_hi + overtrain_rate * (x_hi - x_lo),
+            x_lo - bsde_overtrain_rate * (x_hi - x_lo),
+            x_hi + bsde_overtrain_rate * (x_hi - x_lo),
         )
         self.x_lo = x_lo
         self.x_hi = x_hi
@@ -233,7 +233,7 @@ class BSDENet(torch.nn.Module):
 
         for _ in range(self.nb_time_intervals):
             dw.append(
-                math.sqrt(self.nu * self.delta_t)
+                math.sqrt(abs(self.nu) * self.delta_t)
                 * torch.randn(self.nb_states * self.dim, device=self.device).reshape(
                     -1, self.dim
                 )

@@ -241,7 +241,7 @@ class Net(torch.nn.Module):
         See `x_lo` above.
 
     adjusted_x_boundaries : tuple
-        When `overtrain_rate` > 0,
+        When `branch_overtrain_rate` > 0,
         we widen [x_lo, x_hi] accordingly
         so that the neural network fit better
         on the boundary of [x_lo, x_hi]^{d_in}.
@@ -368,7 +368,7 @@ class Net(torch.nn.Module):
         antithetic=True,
         div_condition_coeff=1.,
         poisson_coeff=1.,
-        overtrain_rate=.1,
+        branch_overtrain_rate=.1,
         overtrain_rate_for_p=.5,
         device="cpu",
         branch_activation="softplus",
@@ -493,7 +493,7 @@ class Net(torch.nn.Module):
         antithetic : bool, optional
             Default to be `True`.
 
-        overtrain_rate : float, optional
+        branch_overtrain_rate : float, optional
             Default to be `.1`.
 
         device : str, optional
@@ -666,8 +666,8 @@ class Net(torch.nn.Module):
         self.x_hi = x_hi
         # slight overtrain the domain of x for higher precision near boundary
         self.adjusted_x_boundaries = (
-            x_lo - overtrain_rate * (x_hi - x_lo),
-            x_hi + overtrain_rate * (x_hi - x_lo),
+            x_lo - branch_overtrain_rate * (x_hi - x_lo),
+            x_hi + branch_overtrain_rate * (x_hi - x_lo),
         )
         self.overtrain_rate_for_p = overtrain_rate_for_p
         self.t_lo = t_lo
@@ -716,13 +716,13 @@ class Net(torch.nn.Module):
 
         timestr = time.strftime("%Y%m%d-%H%M%S")  # current time stamp
         self.working_dir = (
-            "../logs/tmp" if save_as_tmp
-            else f"logs/{timestr}-{problem_name}-T{self.T}-nu{self.nu}"
+            "../logs/tmp/" if save_as_tmp
+            else f"../logs/{timestr}-{problem_name}-T{self.T}-nu{self.nu}"
         )
-        self.working_dir_full_path = os.path.join(
+        self.working_dir_full_path = os.path.abspath(os.path.join(
             os.getcwd().replace("\\", "/"),
             self.working_dir,
-        )
+        ))
         self.log_config()
         self.eval()
 
@@ -1966,7 +1966,9 @@ class Net(torch.nn.Module):
         t_lo, t_hi = self.adjusted_t_boundaries[patch]
         x_lo, x_hi = self.adjusted_x_boundaries
         xx, yy = [], []
-        for _ in range(batches):
+        for i in range(batches):
+            if self.verbose:
+                print(f"Generating batch {i+1}/{batches}")
             unif = (
                 torch.rand(states_per_batch, device=self.device)
                 .repeat(self.nb_path_per_state)
@@ -2097,12 +2099,12 @@ class Net(torch.nn.Module):
         patch : int
             The current patch index.
 
-        overtrain_rate : float, optional
+        branch_overtrain_rate : float, optional
             Generate samples on
             the widened domain
             $$
-            [\\text{x_lo - overtrain_rate} \\times \\text{(x_hi-x_lo)},
-            \\text{x_hi + overtrain_rate} \\times \\text{(x_hi-x_lo)}].
+            [\\text{x_lo - branch_overtrain_rate} \\times \\text{(x_hi-x_lo)},
+            \\text{x_hi + branch_overtrain_rate} \\times \\text{(x_hi-x_lo)}].
             $$
         """
         self.nb_path_per_state *= 1000

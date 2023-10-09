@@ -27,7 +27,7 @@ class DGMNet(torch.nn.Module):
         phi_fun=(lambda x: x),
         x_lo=-10.0,
         x_hi=10.0,
-        overtrain_rate=0.1,
+        dgm_overtrain_rate=0.1,
         t_lo=0.0,
         t_hi=1.0,
         neurons=20,
@@ -92,8 +92,8 @@ class DGMNet(torch.nn.Module):
         self.ori_x_lo = x_lo
         self.ori_x_hi = x_hi
         x_lo, x_hi = (
-            x_lo - overtrain_rate * (x_hi - x_lo),
-            x_hi + overtrain_rate * (x_hi - x_lo),
+            x_lo - dgm_overtrain_rate * (x_hi - x_lo),
+            x_hi + dgm_overtrain_rate * (x_hi - x_lo),
         )
         self.x_lo = x_lo
         self.x_hi = x_hi
@@ -566,8 +566,8 @@ if __name__ == "__main__":
             return torch.sin(tx[1]) * torch.cos(tx[2]) * torch.exp(-nu * (T - tx[0]))
 
 
-    # boundary_fun=None & overtrain_rate=.1
-    # boundary_fun=given & overtrain_rate=.0
+    # boundary_fun=None & dgm_overtrain_rate=.1
+    # boundary_fun=given & dgm_overtrain_rate=.0
     # initialize model and training
     model = DGMNet(
         dgm_f_fun=f_example,
@@ -583,7 +583,7 @@ if __name__ == "__main__":
         verbose=True,
         save_as_tmp=True,
         boundary_fun=boundary_fun,
-        overtrain_rate=.0,
+        dgm_overtrain_rate=.0,
     )
     model.train_and_eval(debug_mode=True)
 

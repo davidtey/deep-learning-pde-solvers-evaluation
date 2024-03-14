@@ -32,6 +32,8 @@ def compare_performance(
         os.makedirs('../logs/data/')
     if not os.path.isdir('../logs/plot/'):
         os.makedirs('../logs/plot/')
+    if not os.path.isdir('../logs/models/'):
+        os.makedirs('../logs/models/')
     x_lo, x_hi = grid_nd.min(), grid_nd.max()
     grid_nd = grid_nd.astype(np.float32)
     grid_with_t = grid_with_t.astype(np.float32)
@@ -81,6 +83,9 @@ def compare_performance(
                 f"fdb runtime: {branch_fdb_runtime[-1]:.0f} seconds; total runtime: {branch_total_runtime[-1]:.0f} seconds."
             )
 
+            if fname is not None:
+                torch.save(model.state_dict(), "../logs/models/branch_" + fname + "_model.pth")
+
         ######### Deep galerkin method
         if not disable_galerkin:
             torch.manual_seed(seed)
@@ -104,6 +109,9 @@ def compare_performance(
             print(
                 f"Time taken: {dgm_runtime[-1]:.0f} seconds; L1 error: {dgm_l1_error[-1]:.2E}; L2 error: {dgm_l2_error[-1]:.2E}; rel error: {dgm_rel_error[-1]:.2E}."
             )
+
+            if fname is not None:
+                torch.save(model.state_dict(), "../logs/models/dgm_" + fname + "_model.pth")
 
         ######### Deep BSDE method
         if not disable_bsde:
@@ -132,6 +140,9 @@ def compare_performance(
             print(
                 f"Time taken: {bsde_runtime[-1]:.0f} seconds; L1 error: {bsde_l1_error[-1]:.2E}; L2 error: {bsde_l2_error[-1]:.2E}; rel error: {bsde_rel_error[-1]:.2E}."
             )
+
+            if fname is not None:
+                torch.save(model.state_dict(), "../logs/models/bsde_" + fname + "_model.pth")
 
         print("\n")
         counter += 1
@@ -180,7 +191,7 @@ def compare_performance(
                 axis=-1,
             )
             np.savetxt(
-                "../logs/data/branch_" + fname + ".csv",
+                "../logs/data/branch_" + fname + "_metrics.csv",
                 data,
                 delimiter=",",
                 header="runtime,l1_error,l2_error,rel_error",

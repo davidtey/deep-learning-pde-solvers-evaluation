@@ -1,2 +1,7 @@
 
 *.pyc
+/notebooks/.ipynb_checkpoints
+*.png
+*.pdf
+*.csv
+/logs/tmp

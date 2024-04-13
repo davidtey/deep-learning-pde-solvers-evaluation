@@ -11,7 +11,7 @@ import logging
 torch.manual_seed(0)  # set seed for reproducibility
 
 
-class Net(torch.nn.Module):
+class CDBNet(torch.nn.Module):
     """
     Deep branching approach to solve the PDE system
     $$
@@ -131,8 +131,8 @@ class Net(torch.nn.Module):
         $$
         \\text{exact_p_fun}(x) = u_{-1}(T, x).
         $$
-        If `exact_p_fun` is not passed to Net,
-        Net will use neural network approximation to solve
+        If `exact_p_fun` is not passed to CDBNet,
+        CDBNet will use neural network approximation to solve
         the Poisson equation at terminal time.
 
     train_for_p : bool
@@ -149,7 +149,7 @@ class Net(torch.nn.Module):
         The quantity `T/patches`.
 
     code : numpy.ndarray
-        Net trains the network based on the `code = [c0, c1, ..., ck]`
+        CDBNet trains the network based on the `code = [c0, c1, ..., ck]`
         and the `coordinate = [i0, i1, ..., ik]` (see `coordinate` below),
         i.e. match c0(u_{i0})(t, x), ..., ck(u_{ik})(t, x).
         See also the deep branching paper for more details about the code.
@@ -321,7 +321,7 @@ class Net(torch.nn.Module):
         Whether or not to use antithetic variates.
 
     device : torch.device
-        The device used by Net, either cpu or cuda.
+        The device used by CDBNet, either cpu or cuda.
 
     verbose : bool
         If `verbose=True`, more information will be printed.
@@ -423,7 +423,7 @@ class Net(torch.nn.Module):
 
         exact_p_fun : function, optional
             Default to be `None`,
-            so that Net will use neural network approximation to solve
+            so that CDBNet will use neural network approximation to solve
             the Poisson equation at terminal time when `train_for_p = True`.
 
         phi0 : float, optional
@@ -541,7 +541,7 @@ class Net(torch.nn.Module):
             we load the model from the directory
             and set `train_for_p = False`.
         """
-        super(Net, self).__init__()
+        super(CDBNet, self).__init__()
         self.problem_name = problem_name
         self.f_fun = f_fun
         self.phi_fun = phi_fun
@@ -1116,7 +1116,7 @@ class Net(torch.nn.Module):
         coordinate : numpy.ndarray
             The current coordinate of the system.
         """
-        x = x.detach().clone().requires_grad_(True)
+        x = x.detach().clone()
         fun_val = torch.zeros_like(x[0])
 
         # negative code of size d
@@ -1141,7 +1141,7 @@ class Net(torch.nn.Module):
                             order, self.adjusted_phi(x, T, patch, self.zeta_map[idx]), x
                         ).detach()
                     )
-            y = torch.stack(y[: self.n]).requires_grad_()
+            y = torch.stack(y[: self.n])
 
             return self.nth_derivatives(
                 code - 1, self.f_fun(y, coordinate), y
@@ -1320,7 +1320,7 @@ class Net(torch.nn.Module):
             assert (code < 0).all(), "coordinate p should not have positive code"
             if self.exact_p_fun_full is not None:
                 mask = mask.bool()
-                x = x[:, mask].detach().clone().requires_grad_(True)
+                x = x[:, mask].detach().clone()
                 tmp = self.nth_derivatives(
                     -code - 1, self.exact_p_fun_full(x, t=t[mask]), x
                 ).detach()
@@ -1985,14 +1985,15 @@ class Net(torch.nn.Module):
             if tx is None:
                 x = x_lo + (x_hi - x_lo) * unif
                 # fix all dimensions (except the first) to be the middle value
-                if self.dim_in > 1 and self.fix_all_dim_except_first:
-                    x[1:, :, :] = (x_hi + x_lo) / 2
+                # if self.dim_in > 1 and self.fix_all_dim_except_first:
+                #     x[1:, :, :] = (x_hi + x_lo) / 2
                 xx.append(torch.cat((t[:, :1], x[:, :, 0].T), dim=-1).detach())
             else:
                 t = tx[:, 0].unsqueeze(-1).repeat((1, self.nb_path_per_state))
                 x = tx[:, 1:].T.unsqueeze(-1).repeat((1, 1, self.nb_path_per_state))
                 xx.append(tx)
             T = (t_lo + self.delta_t) * torch.ones_like(t)
+
             yyy = []
             for (idx, c) in zip(self.coordinate, self.code):
                 yy_tmp = self.gen_sample_batch(
@@ -2037,7 +2038,7 @@ class Net(torch.nn.Module):
         patch : int
             The current patch index.
         """
-        x = x.detach().clone().requires_grad_(True)
+        x = x.detach().clone()
         nb_mc = self.nb_path_per_state
         x = x.repeat(nb_mc, 1, 1)
         unif = (

@@ -9,7 +9,8 @@ import time
 from pynverse import inversefunc
 from solvers.galerkin import DGMNet
 from solvers.bsde import BSDENet
-from solvers.branch import Net
+from solvers.branch import DBNet
+from solvers.continuous_branch import CDBNet
 
 # performance evaluation for PDE
 def compare_performance(
@@ -24,6 +25,7 @@ def compare_performance(
     disable_galerkin=False,
     disable_bsde=False,
     disable_branch=False,
+    continuous_branch=False,
     seeds=list(range(10)),
     disable_relative=False,
     **kwargs,
@@ -55,12 +57,18 @@ def compare_performance(
     for seed in seeds:
         ######### Deep branching method
         if not disable_branch:
+            
             torch.manual_seed(seed)
             print(
                 f"#### Starting deep branching method with seed {seed} - {counter} out of {len(seeds)} times"
             )
             start = time.time()
-            model = Net(t_lo=t_lo, t_hi=t_lo, x_lo=x_lo, x_hi=x_hi, problem_name=problem_name, **kwargs)
+            
+            if continuous_branch:
+                model = CDBNet(t_lo=t_lo, t_hi=t_lo, x_lo=x_lo, x_hi=x_hi, problem_name=problem_name, **kwargs)
+            else:
+                model = DBNet(t_lo=t_lo, t_hi=t_lo, x_lo=x_lo, x_hi=x_hi, problem_name=problem_name, **kwargs)
+
             model.train_and_eval(debug_mode)
             branch_total_runtime.append(time.time() - start)
             branch_fdb_runtime.append(model.fdb_runtime)

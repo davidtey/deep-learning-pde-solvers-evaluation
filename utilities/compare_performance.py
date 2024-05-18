@@ -28,8 +28,10 @@ def compare_performance(
     continuous_branch=False,
     seeds=list(range(10)),
     disable_relative=False,
+    return_models=False,
     **kwargs,
 ):
+    models_out = []
     if not os.path.isdir('../logs/data/'):
         os.makedirs('../logs/data/')
     if not os.path.isdir('../logs/plot/'):
@@ -94,6 +96,9 @@ def compare_performance(
             if fname is not None:
                 torch.save(model.state_dict(), "../logs/models/branch_" + fname + "_model.pth")
 
+            if return_models:
+                models_out.append(model)
+
         ######### Deep galerkin method
         if not disable_galerkin:
             torch.manual_seed(seed)
@@ -120,6 +125,9 @@ def compare_performance(
 
             if fname is not None:
                 torch.save(model.state_dict(), "../logs/models/dgm_" + fname + "_model.pth")
+
+            if return_models:
+                models_out.append(model)
 
         ######### Deep BSDE method
         if not disable_bsde:
@@ -151,6 +159,9 @@ def compare_performance(
 
             if fname is not None:
                 torch.save(model.state_dict(), "../logs/models/bsde_" + fname + "_model.pth")
+            
+            if return_models:
+                models_out.append(model)
 
         print("\n")
         counter += 1
@@ -284,3 +295,5 @@ def compare_performance(
         np.savetxt(
             "../logs/data/plt_" + fname + ".csv", plt_data, delimiter=",", header=plt_header, comments=""
         )
+
+    return models_out

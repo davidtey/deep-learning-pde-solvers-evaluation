@@ -8,6 +8,8 @@ import numpy as np
 from .fdb import fdb_nd
 import logging
 
+from mpl_toolkits.mplot3d import Axes3D
+
 torch.manual_seed(0)  # set seed for reproducibility
 
 
@@ -1975,7 +1977,8 @@ class CDBNet(torch.nn.Module):
                 .reshape(self.nb_path_per_state, -1)
                 .T
             )
-            t = t_lo + (t_hi - t_lo) * unif
+
+            t = self.t_lo + (self.t_hi - self.t_lo) * unif              # changed t_hi and t_lo to self.t_hi and self.t_lo
             unif = (
                 torch.rand(self.dim_in * states_per_batch, device=self.device)
                 .repeat(self.nb_path_per_state)
@@ -1985,15 +1988,15 @@ class CDBNet(torch.nn.Module):
             if tx is None:
                 x = x_lo + (x_hi - x_lo) * unif
                 # fix all dimensions (except the first) to be the middle value
-                # if self.dim_in > 1 and self.fix_all_dim_except_first:
-                #     x[1:, :, :] = (x_hi + x_lo) / 2
+                if self.dim_in > 1 and self.fix_all_dim_except_first:           # comment out for continuous space estimation
+                    x[1:, :, :] = (x_hi + x_lo) / 2
                 xx.append(torch.cat((t[:, :1], x[:, :, 0].T), dim=-1).detach())
             else:
                 t = tx[:, 0].unsqueeze(-1).repeat((1, self.nb_path_per_state))
                 x = tx[:, 1:].T.unsqueeze(-1).repeat((1, 1, self.nb_path_per_state))
                 xx.append(tx)
-            T = (t_lo + self.delta_t) * torch.ones_like(t)
-
+            #T = (t_lo + self.delta_t) * torch.ones_like(t) # comment out for continuous time estimation
+            T = t                                           # pass in distribution of T
             yyy = []
             for (idx, c) in zip(self.coordinate, self.code):
                 yy_tmp = self.gen_sample_batch(
@@ -2256,6 +2259,21 @@ class CDBNet(torch.nn.Module):
                 start = time.time()
                 if reuse_x is None:
                     x, y = self.gen_sample(patch=p)
+                    # print(f"x: {x}")
+                    # print(f"y: {y}")
+
+                    sample_t = x[:, 0].detach().cpu()
+                    sample_x = x[:, 1].detach().cpu()
+                    sample_y = y.detach().cpu()
+                    fig = plt.figure(figsize=(9,6))
+
+                    ax = fig.add_subplot(111, projection='3d')
+                    ax.scatter3D(sample_t, sample_x, sample_y);
+                    ax.view_init(35,35)
+                    ax.set_xlabel('$t$')
+                    ax.set_ylabel('$x$')
+                    ax.set_zlabel('$u_\\theta(t,x)$')
+                    ax.set_title('Sample points');
                 else:
                     x, y = reuse_x, reuse_y
                 self.print_msg(
@@ -2306,3 +2324,4 @@ class CDBNet(torch.nn.Module):
             output_dict[f"patch_{p}"] = (time.time() - start, best_loss)
         if return_dict:
             return output_dict
+            

@@ -1995,8 +1995,7 @@ class CDBNet(torch.nn.Module):
                 t = tx[:, 0].unsqueeze(-1).repeat((1, self.nb_path_per_state))
                 x = tx[:, 1:].T.unsqueeze(-1).repeat((1, 1, self.nb_path_per_state))
                 xx.append(tx)
-            #T = (t_lo + self.delta_t) * torch.ones_like(t) # comment out for continuous time estimation
-            T = t                                           # pass in distribution of T
+            T = (t_lo + self.delta_t) * torch.ones_like(t)
             yyy = []
             for (idx, c) in zip(self.coordinate, self.code):
                 yy_tmp = self.gen_sample_batch(
